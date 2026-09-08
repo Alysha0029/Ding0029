@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>工作台首页 - 园区后台管理系统</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="layout">
+    <!-- ==================== 左侧侧边导航栏 ==================== -->
+    <aside class="sidebar" id="sidebar">
+        <div class="logo">
+            <span class="logo-icon">🏢</span>
+            <span class="text">园区后台管理</span>
+        </div>
+        <nav class="menu">
+            <!-- 工作台（当前页高亮） -->
+            <a href="index.html" class="menu-item active" data-page="index.html">
+                <span class="icon">🏠</span><span class="text">工作台</span>
+            </a>
+            <!-- 月卡管理：父级菜单，可折叠展开子菜单 -->
+            <div class="menu-group open">
+                <div class="menu-title">
+                    <span class="icon">🅿️</span><span class="text">月卡管理</span>
+                    <span class="arrow">▾</span>
+                </div>
+                <div class="submenu">
+                    <a href="monthCard.html" class="menu-item" data-page="monthCard.html">
+                        <span class="icon">📋</span><span class="text">月卡列表</span>
+                    </a>
+                    <a href="addMonthCard.html" class="menu-item" data-page="addMonthCard.html">
+                        <span class="icon">➕</span><span class="text">增加月卡</span>
+                    </a>
+                </div>
+            </div>
+        </nav>
+    </aside>
+
+    <!-- ==================== 右侧主内容区 ==================== -->
+    <div class="main">
+        <!-- 顶部头部：折叠按钮 + 登录账号 -->
+        <header class="header">
+            <button class="collapse-btn" id="sidebarToggle" title="折叠/展开菜单">☰</button>
+            <div class="header-right">
+                <span class="account-avatar">A</span>
+                <span>管理员 admin</span>
+            </div>
+        </header>
+
+        <div class="content">
+            <!-- 4 项统计卡片 -->
+            <div class="stat-cards">
+                <div class="stat-card">
+                    <div class="stat-icon blue">🚗</div>
+                    <div class="stat-info">
+                        <div class="stat-label">月卡车辆总数</div>
+                        <div class="stat-value"><span id="statCarTotal">0</span><span class="stat-unit">辆</span></div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon green">💰</div>
+                    <div class="stat-info">
+                        <div class="stat-label">年度累计收费</div>
+                        <div class="stat-value"><span id="statYearFee">0</span><span class="stat-unit">元</span></div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon orange">🏭</div>
+                    <div class="stat-info">
+                        <div class="stat-label">入驻企业总数</div>
+                        <div class="stat-value"><span id="statEnterprise">0</span><span class="stat-unit">家</span></div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon purple">🚧</div>
+                    <div class="stat-info">
+                        <div class="stat-label">一体杆总数</div>
+                        <div class="stat-value"><span id="statGate">0</span><span class="stat-unit">台</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 快捷入口模块 -->
+            <div class="panel">
+                <div class="panel-title">快捷入口</div>
+                <div class="quick-entry">
+                    <div class="quick-item" onclick="location.href='monthCard.html'">
+                        <div class="quick-icon">📋</div>
+                        <div class="quick-name">月卡列表</div>
+                    </div>
+                    <div class="quick-item" onclick="location.href='addMonthCard.html'">
+                        <div class="quick-icon">➕</div>
+                        <div class="quick-name">增加月卡</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 预留扩展占位容器 -->
+            <div class="panel">
+                <div class="panel-title">扩展功能区</div>
+                <div class="placeholder">预留扩展占位容器（可在此扩展更多业务模块）</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="js/common.js"></script>
+<script>
+    /* ============================================================
+       index.html —— 工作台首页渲染逻辑
+       数据与视图分离：统计卡片由 renderHomeStat() 渲染，修改
+       数据源后调用渲染函数即可更新界面。
+       ============================================================ */
+
+    // 模拟固定统计数据（年度累计收费 / 入驻企业总数 / 一体杆总数）
+    const FIXED_STAT = {
+        yearFee: 1286000,   // 年度累计收费（元）
+        enterprise: 86,     // 入驻企业总数（家）
+        gate: 12            // 一体杆总数（台）
+    };
+
+    /**
+     * 渲染首页统计卡片
+     * - 月卡车辆总数：读取 localStorage 月卡数组长度动态获取
+     * - 其余三项：使用模拟固定值
+     * - 金额数字做千分位格式化
+     */
+    function renderHomeStat() {
+        const monthCards = loadMonthCards();
+
+        document.getElementById('statCarTotal').textContent = formatMoney(monthCards.length);
+        document.getElementById('statYearFee').textContent = formatMoney(FIXED_STAT.yearFee);
+        document.getElementById('statEnterprise').textContent = formatMoney(FIXED_STAT.enterprise);
+        document.getElementById('statGate').textContent = formatMoney(FIXED_STAT.gate);
+    }
+
+    // 页面加载完成：初始化数据（无数据则写入默认模拟数据）并渲染
+    window.addEventListener('load', function () {
+        initMonthCards();
+        renderHomeStat();
+        initSidebar();
+    });
+</script>
+</body>
+</html>

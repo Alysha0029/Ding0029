@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>增加月卡 - 园区后台管理系统</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="layout">
+    <!-- ==================== 左侧侧边导航栏 ==================== -->
+    <aside class="sidebar" id="sidebar">
+        <div class="logo">
+            <span class="logo-icon">🏢</span>
+            <span class="text">园区后台管理</span>
+        </div>
+        <nav class="menu">
+            <a href="index.html" class="menu-item" data-page="index.html">
+                <span class="icon">🏠</span><span class="text">工作台</span>
+            </a>
+            <div class="menu-group open">
+                <div class="menu-title">
+                    <span class="icon">🅿️</span><span class="text">月卡管理</span>
+                    <span class="arrow">▾</span>
+                </div>
+                <div class="submenu">
+                    <a href="monthCard.html" class="menu-item" data-page="monthCard.html">
+                        <span class="icon">📋</span><span class="text">月卡列表</span>
+                    </a>
+                    <a href="addMonthCard.html" class="menu-item" data-page="addMonthCard.html">
+                        <span class="icon">➕</span><span class="text">增加月卡</span>
+                    </a>
+                </div>
+            </div>
+        </nav>
+    </aside>
+
+    <!-- ==================== 右侧主内容区 ==================== -->
+    <div class="main">
+        <header class="header">
+            <button class="collapse-btn" id="sidebarToggle" title="折叠/展开菜单">☰</button>
+            <div class="header-right">
+                <span class="account-avatar">A</span>
+                <span>管理员 admin</span>
+            </div>
+        </header>
+
+        <div class="content">
+            <!-- 返回按钮 + 页面标题 -->
+            <div class="page-header">
+                <button class="back-btn" onclick="location.href='monthCard.html'">← 返回</button>
+                <span class="page-title" id="pageTitle">增加月卡</span>
+            </div>
+
+            <!-- 车辆信息表单卡片 -->
+            <div class="form-card">
+                <div class="card-title">车辆信息</div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label"><span class="required">*</span>车牌号</label>
+                        <input class="form-input" id="addPlate" placeholder="如：赣A88888">
+                        <div class="error-tip" id="addPlateTip"></div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label"><span class="required">*</span>车主姓名</label>
+                        <input class="form-input" id="addOwner" placeholder="请输入车主姓名">
+                        <div class="error-tip" id="addOwnerTip"></div>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label"><span class="required">*</span>手机号</label>
+                        <input class="form-input" id="addPhone" placeholder="请输入 11 位手机号">
+                        <div class="error-tip" id="addPhoneTip"></div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">车辆类型</label>
+                        <select class="form-select" id="addVehicleType">
+                            <option value="小型车">小型车</option>
+                            <option value="中型车">中型车</option>
+                            <option value="大型车">大型车</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 缴费信息表单卡片 -->
+            <div class="form-card">
+                <div class="card-title">缴费信息</div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label"><span class="required">*</span>缴费金额（元）</label>
+                        <input class="form-input" id="addAmount" type="number" min="0" placeholder="请输入缴费金额">
+                        <div class="error-tip" id="addAmountTip"></div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">剩余有效天数</label>
+                        <input class="form-input" id="addRemainDay" readonly placeholder="自动计算">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label"><span class="required">*</span>开始日期</label>
+                        <input class="form-input" id="addStartDate" type="date">
+                        <div class="error-tip" id="addStartDateTip"></div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label"><span class="required">*</span>结束日期</label>
+                        <input class="form-input" id="addEndDate" type="date">
+                        <div class="error-tip" id="addEndDateTip"></div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">状态</label>
+                    <input class="form-input" id="addStatus" readonly placeholder="自动判断">
+                </div>
+            </div>
+
+            <!-- 操作按钮 -->
+            <div class="btn-group">
+                <button class="btn btn-primary" onclick="saveCard()">确定</button>
+                <button class="btn btn-default" onclick="resetForm()">重置</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="js/common.js"></script>
+<script>
+    /* ============================================================
+       addMonthCard.html —— 增加 / 编辑月卡页逻辑
+       功能：读取 URL 参数 id 区分新增/编辑模式并回填；表单校验
+             （必填、手机号、车牌正则、金额、日期）；自动计算剩余
+             天数与状态；保存持久化后跳转回月卡管理页。
+       ============================================================ */
+
+    let monthCards = [];   // 本地数据源
+    let editingId = null;  // 编辑模式的记录 id，新增模式为 null
+
+    /* ---------------- 工具函数 ---------------- */
+
+    function showErr(id, msg) {
+        document.getElementById(id).textContent = msg;
+    }
+
+    function clearTips() {
+        ['addPlateTip', 'addOwnerTip', 'addPhoneTip', 'addAmountTip', 'addStartDateTip', 'addEndDateTip']
+            .forEach(function (id) { document.getElementById(id).textContent = ''; });
+    }
+
+    /** 修改日期时自动计算剩余有效天数与状态 */
+    function updateDerived() {
+        const s = document.getElementById('addStartDate').value;
+        const e = document.getElementById('addEndDate').value;
+        if (s && e) {
+            document.getElementById('addRemainDay').value = calcDays(s, e);
+            document.getElementById('addStatus').value = formatStatus(calcStatus(e));
+        }
+    }
+
+    /* ---------------- 表单校验 ---------------- */
+
+    function validateForm() {
+        let ok = true;
+        const plate = document.getElementById('addPlate').value.trim();
+        const owner = document.getElementById('addOwner').value.trim();
+        const phone = document.getElementById('addPhone').value.trim();
+        const amount = document.getElementById('addAmount').value.trim();
+        const startDate = document.getElementById('addStartDate').value;
+        const endDate = document.getElementById('addEndDate').value;
+
+        // 车牌：必填 + 国内车牌正则
+        if (!plate) { showErr('addPlateTip', '车牌号不能为空'); ok = false; }
+        else if (!isValidPlate(plate)) { showErr('addPlateTip', '车牌号格式不正确（如：赣A88888）'); ok = false; }
+        else showErr('addPlateTip', '');
+
+        // 车主：必填
+        if (!owner) { showErr('addOwnerTip', '车主姓名不能为空'); ok = false; }
+        else showErr('addOwnerTip', '');
+
+        // 手机号：必填 + 手机号正则
+        if (!phone) { showErr('addPhoneTip', '手机号不能为空'); ok = false; }
+        else if (!isValidPhone(phone)) { showErr('addPhoneTip', '手机号格式不正确'); ok = false; }
+        else showErr('addPhoneTip', '');
+
+        // 金额：必填 + 正数
+        if (amount === '') { showErr('addAmountTip', '缴费金额不能为空'); ok = false; }
+        else if (Number(amount) <= 0) { showErr('addAmountTip', '缴费金额必须为正数'); ok = false; }
+        else showErr('addAmountTip', '');
+
+        // 日期：必填 + 结束日期不早于开始日期
+        if (!startDate) { showErr('addStartDateTip', '请选择开始日期'); ok = false; }
+        else showErr('addStartDateTip', '');
+
+        if (!endDate) { showErr('addEndDateTip', '请选择结束日期'); ok = false; }
+        else if (startDate && endDate < startDate) { showErr('addEndDateTip', '结束日期不能早于开始日期'); ok = false; }
+        else showErr('addEndDateTip', '');
+
+        return ok;
+    }
+
+    /* ---------------- 保存 / 重置 ---------------- */
+
+    function saveCard() {
+        if (!validateForm()) return;
+
+        const plate = document.getElementById('addPlate').value.trim();
+        const owner = document.getElementById('addOwner').value.trim();
+        const phone = document.getElementById('addPhone').value.trim();
+        const vehicleType = document.getElementById('addVehicleType').value;
+        const amount = Number(document.getElementById('addAmount').value);
+        const startDate = document.getElementById('addStartDate').value;
+        const endDate = document.getElementById('addEndDate').value;
+
+        const remainDay = calcDays(startDate, endDate);
+        const status = calcStatus(endDate);
+
+        if (editingId !== null) {
+            // 编辑模式：找到对应下标替换对象
+            const idx = monthCards.findIndex(function (c) { return c.id === editingId; });
+            if (idx > -1) {
+                monthCards[idx] = {
+                    id: editingId, plate: plate, owner: owner, phone: phone,
+                    vehicleType: vehicleType, amount: amount,
+                    startDate: startDate, endDate: endDate,
+                    remainDay: remainDay, status: status
+                };
+            }
+        } else {
+            // 新增模式：Date.now() 生成唯一 id，push 到数组
+            monthCards.push({
+                id: Date.now(), plate: plate, owner: owner, phone: phone,
+                vehicleType: vehicleType, amount: amount,
+                startDate: startDate, endDate: endDate,
+                remainDay: remainDay, status: status
+            });
+        }
+
+        saveMonthCards(monthCards);
+        location.href = 'monthCard.html'; // 保存成功跳转回月卡管理页
+    }
+
+    function resetForm() {
+        document.getElementById('addPlate').value = '';
+        document.getElementById('addOwner').value = '';
+        document.getElementById('addPhone').value = '';
+        document.getElementById('addVehicleType').value = '小型车';
+        document.getElementById('addAmount').value = '';
+        document.getElementById('addStartDate').value = '';
+        document.getElementById('addEndDate').value = '';
+        document.getElementById('addRemainDay').value = '';
+        document.getElementById('addStatus').value = '';
+        clearTips();
+    }
+
+    /* ---------------- 页面初始化 ---------------- */
+
+    window.addEventListener('load', function () {
+        initSidebar();
+        monthCards = initMonthCards();
+
+        // 读取 URL 参数 id，区分新增 / 编辑模式
+        const idStr = getQueryParam('id');
+        if (idStr) {
+            const id = Number(idStr);//数字化id，初始为字符串
+            const record = monthCards.find(function (c) { return c.id === id; });
+            if (record) {
+                editingId = id;
+                document.getElementById('pageTitle').textContent = '编辑月卡';
+                // 编辑模式：自动回填原有表单数据
+                document.getElementById('addPlate').value = record.plate;
+                document.getElementById('addOwner').value = record.owner;
+                document.getElementById('addPhone').value = record.phone;
+                document.getElementById('addVehicleType').value = record.vehicleType;
+                document.getElementById('addAmount').value = record.amount;
+                document.getElementById('addStartDate').value = record.startDate;
+                document.getElementById('addEndDate').value = record.endDate;
+                document.getElementById('addRemainDay').value = record.remainDay;
+                document.getElementById('addStatus').value = formatStatus(record.status);
+            }
+        }
+
+        // 日期变化时自动计算
+        document.getElementById('addStartDate').addEventListener('change', updateDerived);
+        document.getElementById('addEndDate').addEventListener('change', updateDerived);
+    });
+</script>
+</body>
+</html>

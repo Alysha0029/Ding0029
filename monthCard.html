@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>月卡管理 - 园区后台管理系统</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="layout">
+    <!-- ==================== 左侧侧边导航栏 ==================== -->
+    <aside class="sidebar" id="sidebar">
+        <div class="logo">
+            <span class="logo-icon">🏢</span>
+            <span class="text">园区后台管理</span>
+        </div>
+        <nav class="menu">
+            <a href="index.html" class="menu-item" data-page="index.html">
+                <span class="icon">🏠</span><span class="text">工作台</span>
+            </a>
+            <div class="menu-group open">
+                <div class="menu-title">
+                    <span class="icon">🅿️</span><span class="text">月卡管理</span>
+                    <span class="arrow">▾</span>
+                </div>
+                <div class="submenu">
+                    <a href="monthCard.html" class="menu-item" data-page="monthCard.html">
+                        <span class="icon">📋</span><span class="text">月卡列表</span>
+                    </a>
+                    <a href="addMonthCard.html" class="menu-item" data-page="addMonthCard.html">
+                        <span class="icon">➕</span><span class="text">增加月卡</span>
+                    </a>
+                </div>
+            </div>
+        </nav>
+    </aside>
+
+    <!-- ==================== 右侧主内容区 ==================== -->
+    <div class="main">
+        <header class="header">
+            <button class="collapse-btn" id="sidebarToggle" title="折叠/展开菜单">☰</button>
+            <div class="header-right">
+                <span class="account-avatar">A</span>
+                <span>管理员 admin</span>
+            </div>
+        </header>
+
+        <div class="content">
+            <!-- 查询筛选区 -->
+            <div class="panel">
+                <div class="panel-title">查询筛选</div>
+                <div class="search-bar">
+                    <div class="form-group">
+                        <label class="form-label">车牌号</label>
+                        <input class="form-input" id="filterPlate" placeholder="请输入车牌号">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">车主姓名</label>
+                        <input class="form-input" id="filterOwner" placeholder="请输入车主姓名">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">状态</label>
+                        <select class="form-select" id="filterStatus">
+                            <option value="">全部</option>
+                            <option value="0">可用</option>
+                            <option value="1">已过期</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="flex:0 0 auto;">
+                        <!-- 按钮组不拉长，保持自身长度 -->
+                        <button class="btn btn-primary" onclick="applyFilter()">查询</button>
+                        <button class="btn btn-default" onclick="resetFilter()">重置</button>
+                        <button class="btn btn-success" onclick="location.href='addMonthCard.html'">添加月卡</button>
+                        <button class="btn btn-danger" onclick="batchDelete()">批量删除</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 月卡列表表格 -->
+            <div class="panel">
+                <div class="panel-title">月卡列表</div>
+                <div class="table-wrapper">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th><input type="checkbox" id="selectAll" title="全选"></th>
+                                <th>车牌号</th>
+                                <th>车主姓名</th>
+                                <th>手机号</th>
+                                <th>车辆类型</th>
+                                <th>缴费金额</th>
+                                <th>开始日期</th>
+                                <th>结束日期</th>
+                                <th>剩余天数</th>
+                                <th>状态</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbody"></tbody>
+                    </table>
+                </div>
+
+                <!-- 分页组件 -->
+                <div class="pagination">
+                    <div class="page-info" id="pageInfo"></div>
+                    <div class="page-controls">
+                        <span>每页</span>
+                        <select class="page-size-select" id="pageSizeSelect">
+                            <option value="5">5</option>
+                            <option value="10">10</option>
+                            <option value="20">20</option>
+                        </select>
+                        <span>条</span>
+                        <button class="page-btn" id="prevBtn">上一页</button>
+                        <button class="page-btn" id="nextBtn">下一页</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ==================== 查看弹窗（只读） ==================== -->
+<div class="modal-mask" id="viewModal">
+    <div class="modal">
+        <div class="modal-header">
+            <span class="modal-title">查看月卡</span>
+            <button class="modal-close" onclick="closeView()">×</button>
+        </div>
+        <div class="modal-body">
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">车牌号</label>
+                    <input class="form-input" id="viewPlate" readonly>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">车主姓名</label>
+                    <input class="form-input" id="viewOwner" readonly>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">手机号</label>
+                    <input class="form-input" id="viewPhone" readonly>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">车辆类型</label>
+                    <input class="form-input" id="viewVehicleType" readonly>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">缴费金额（元）</label>
+                    <input class="form-input" id="viewAmount" readonly>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">剩余有效天数</label>
+                    <input class="form-input" id="viewRemainDay" readonly>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">开始日期</label>
+                    <input class="form-input" id="viewStartDate" readonly>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">结束日期</label>
+                    <input class="form-input" id="viewEndDate" readonly>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="form-label">状态</label>
+                <input class="form-input" id="viewStatus" readonly>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-default" onclick="closeView()">关闭</button>
+        </div>
+    </div>
+</div>
+
+<!-- ==================== 编辑 / 续费弹窗（复用同一弹窗） ==================== -->
+<div class="modal-mask" id="editModal">
+    <div class="modal">
+        <div class="modal-header">
+            <span class="modal-title" id="editModalTitle">编辑月卡</span>
+            <button class="modal-close" onclick="closeEdit()">×</button>
+        </div>
+        <div class="modal-body">
+            <div class="form-row">
+                <!-- 表单行，**布局用的 CSS 容器** -->
+                <div class="form-group">
+                    <label class="form-label"><span class="required">*</span>车牌号</label>
+                    <!-- 输入框 -->
+                    <input class="form-input" id="editPlate">
+                    <div class="error-tip" id="editPlateTip"></div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label"><span class="required">*</span>车主姓名</label>
+                    <input class="form-input" id="editOwner">
+                    <div class="error-tip" id="editOwnerTip"></div>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label"><span class="required">*</span>手机号</label>
+                    <input class="form-input" id="editPhone">
+                    <div class="error-tip" id="editPhoneTip"></div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">车辆类型</label>
+                    <select class="form-select" id="editVehicleType">
+                        <option value="小型车">小型车</option>
+                        <option value="中型车">中型车</option>
+                        <option value="大型车">大型车</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label"><span class="required">*</span>缴费金额（元）</label>
+                    <input class="form-input" id="editAmount" type="number" min="0">
+                    <div class="error-tip" id="editAmountTip"></div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">剩余有效天数</label>
+                    <input class="form-input" id="editRemainDay" readonly>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label"><span class="required">*</span>开始日期</label>
+                    <input class="form-input" id="editStartDate" type="date">
+                    <div class="error-tip" id="editStartDateTip"></div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label"><span class="required">*</span>结束日期</label>
+                    <input class="form-input" id="editEndDate" type="date">
+                    <div class="error-tip" id="editEndDateTip"></div>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="form-label">状态</label>
+                <input class="form-input" id="editStatus" readonly>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-default" onclick="closeEdit()">取消</button>
+            <button class="btn btn-primary" onclick="saveEdit()">保存</button>
+        </div>
+    </div>
+</div>
+
+<script src="js/common.js"></script>
+<script>
+    /* ============================================================
+       monthCard.html —— 月卡管理列表页逻辑
+       功能：查询筛选、表格渲染、查看/编辑/续费弹窗、单条/批量删除、
+             全选、前端分页，所有增删改同步持久化到 localStorage。
+       ============================================================ */
+
+    // ---- 状态变量 ----
+    let monthCards = [];        // 全量数据源
+    let filteredList = [];      // 筛选后的数据
+    let currentPage = 1;        // 当前页码
+    let pageSize = 5;           // 每页条数
+    let editingId = null;       // 当前编辑 / 续费的记录 id
+    let editMode = 'edit';      // 'edit' 编辑模式 / 'renew' 续费模式
+
+    const tbody = document.getElementById('tbody');
+
+    /* ---------------- 渲染函数 ---------------- */
+
+    /**
+     * 渲染表格：根据当前页对 filteredList 做 slice 切片，
+     * 动态生成表格行；状态字段格式化（0可用 / 1已过期）。
+     */
+    function renderTable() {
+        const start = (currentPage - 1) * pageSize;
+        const pageData = filteredList.slice(start, start + pageSize);
+
+        tbody.innerHTML = pageData.map(function (c) {
+            const statusCls = c.status === 1 ? 'expired' : 'available';
+            return '<tr>' +
+                '<td><input type="checkbox" class="row-check" data-id="' + c.id + '"></td>' +
+                '<td>' + c.plate + '</td>' +
+                '<td>' + c.owner + '</td>' +
+                '<td>' + c.phone + '</td>' +
+                '<td>' + c.vehicleType + '</td>' +
+                '<td>' + formatMoney(c.amount) + '</td>' +
+                '<td>' + c.startDate + '</td>' +
+                '<td>' + c.endDate + '</td>' +
+                '<td>' + c.remainDay + '</td>' +
+                '<td><span class="status-badge ' + statusCls + '">' + formatStatus(c.status) + '</span></td>' +
+                '<td>' +
+                    '<button class="btn-link" onclick="openView(' + c.id + ')">查看</button>' +
+                    '<button class="btn-link" onclick="openEdit(' + c.id + ')">编辑</button>' +
+                    '<button class="btn-link" onclick="openRenew(' + c.id + ')">续费</button>' +
+                    '<button class="btn-link danger" onclick="deleteCard(' + c.id + ')">删除</button>' +
+                '</td>' +
+            '</tr>';
+        }).join('');
+
+        // 重新渲染后复位表头全选状态
+        document.getElementById('selectAll').checked = false;
+    }
+
+    /**
+     * 渲染分页信息与按钮可用状态
+     */
+    function renderPagination() {
+        const total = filteredList.length;
+        const totalPages = Math.max(1, Math.ceil(total / pageSize));
+        document.getElementById('pageInfo').textContent = '共 ' + total + ' 条记录，第 ' + currentPage + '/' + totalPages + ' 页';
+        document.getElementById('prevBtn').disabled = currentPage <= 1;
+        document.getElementById('nextBtn').disabled = currentPage >= totalPages;
+    }
+
+    /**
+     * 整体刷新：根据筛选条件过滤并重绘表格与分页
+     */
+    function refresh() {
+        renderTable();
+        renderPagination();
+    }
+
+    /* ---------------- 查询筛选 ---------------- */
+
+    function applyFilter() {
+        const plate = document.getElementById('filterPlate').value.trim();
+        const owner = document.getElementById('filterOwner').value.trim();
+        const status = document.getElementById('filterStatus').value;
+
+        filteredList = monthCards.filter(function (c) {
+            const matchPlate = !plate || c.plate.toLowerCase().indexOf(plate.toLowerCase()) > -1;
+            const matchOwner = !owner || c.owner.indexOf(owner) > -1;
+            const matchStatus = status === '' || String(c.status) === status;
+            return matchPlate && matchOwner && matchStatus;
+        });
+
+        currentPage = 1; // 查询后重置到第 1 页
+        refresh();
+    }
+
+    function resetFilter() {
+        document.getElementById('filterPlate').value = '';
+        document.getElementById('filterOwner').value = '';
+        document.getElementById('filterStatus').value = '';
+        filteredList = monthCards.slice();
+        currentPage = 1;
+        refresh();
+    }
+
+    /* ---------------- 删除 / 批量删除 ---------------- */
+
+    function deleteCard(id) {
+        if (!confirm('确定要删除该条月卡记录吗？')) return;
+        monthCards = monthCards.filter(function (c) { return c.id !== id; });
+        saveMonthCards(monthCards);
+        applyFilter();
+    }
+
+    function batchDelete() {
+        const checked = document.querySelectorAll('.row-check:checked');
+        if (checked.length === 0) {
+            alert('请先勾选要删除的记录');
+            return;
+        }
+        if (!confirm('确定要删除选中的 ' + checked.length + ' 条记录吗？')) return;
+        // 把选中的id转化为数字数组
+        const ids = Array.prototype.map.call(checked, function (cb) { return Number(cb.dataset.id); });
+        monthCards = monthCards.filter(function (c) { return ids.indexOf(c.id) === -1; });
+        saveMonthCards(monthCards);
+        applyFilter();
+    }
+
+    /* ---------------- 查看弹窗（只读） ---------------- */
+
+    function openView(id) {
+        const c = monthCards.find(function (x) { return x.id === id; });
+        if (!c) return;
+        document.getElementById('viewPlate').value = c.plate;
+        document.getElementById('viewOwner').value = c.owner;
+        document.getElementById('viewPhone').value = c.phone;
+        document.getElementById('viewVehicleType').value = c.vehicleType;
+        document.getElementById('viewAmount').value = c.amount;
+        document.getElementById('viewRemainDay').value = c.remainDay;
+        document.getElementById('viewStartDate').value = c.startDate;
+        document.getElementById('viewEndDate').value = c.endDate;
+        document.getElementById('viewStatus').value = formatStatus(c.status);
+        document.getElementById('viewModal').classList.add('show');
+    }
+
+    function closeView() {
+        document.getElementById('viewModal').classList.remove('show');
+    }
+
+    /* ---------------- 编辑 / 续费弹窗（复用） ---------------- */
+
+    function fillEditForm(c) {
+        document.getElementById('editPlate').value = c.plate;
+        document.getElementById('editOwner').value = c.owner;
+        document.getElementById('editPhone').value = c.phone;
+        document.getElementById('editVehicleType').value = c.vehicleType;
+        document.getElementById('editAmount').value = c.amount;
+        document.getElementById('editStartDate').value = c.startDate;
+        document.getElementById('editEndDate').value = c.endDate;
+        document.getElementById('editRemainDay').value = c.remainDay;
+        document.getElementById('editStatus').value = formatStatus(c.status);
+        clearEditTips();
+    }
+
+    /** 车辆信息字段是否可编辑：编辑模式可改，续费模式只读 */
+    function setVehicleEditable(editable) {
+        document.getElementById('editPlate').readOnly = !editable;
+        document.getElementById('editOwner').readOnly = !editable;
+        document.getElementById('editPhone').readOnly = !editable;
+        document.getElementById('editVehicleType').disabled = !editable;
+    }
+
+    function clearEditTips() {
+        ['editPlateTip', 'editOwnerTip', 'editPhoneTip', 'editAmountTip', 'editStartDateTip', 'editEndDateTip']
+            .forEach(function (id) { document.getElementById(id).textContent = ''; });
+    }
+
+    function openEdit(id) {
+        const c = monthCards.find(function (x) { return x.id === id; });
+        if (!c) return;
+        editingId = id;
+        editMode = 'edit';
+        document.getElementById('editModalTitle').textContent = '编辑月卡';
+        fillEditForm(c);
+        setVehicleEditable(true);
+        document.getElementById('editModal').classList.add('show');
+    }
+
+    function openRenew(id) {
+        const c = monthCards.find(function (x) { return x.id === id; });
+        if (!c) return;
+        editingId = id;
+        editMode = 'renew';
+        document.getElementById('editModalTitle').textContent = '续费月卡';
+        fillEditForm(c);
+        setVehicleEditable(false); // 车辆信息只读，仅缴费相关可修改
+        document.getElementById('editModal').classList.add('show');
+    }
+
+    function closeEdit() {
+        document.getElementById('editModal').classList.remove('show');
+    }
+
+    /** 修改日期时自动重算剩余有效天数与状态 */
+    function updateEditDerived() {
+        // 获取编辑弹窗的开始日期、结束日期输入框的值
+        const s = document.getElementById('editStartDate').value;
+        const e = document.getElementById('editEndDate').value;
+        if (s && e) {
+            document.getElementById('editRemainDay').value = calcDays(s, e);
+            document.getElementById('editStatus').value = formatStatus(calcStatus(e));
+        }
+    }
+
+    function showErr(id, msg) {
+        document.getElementById(id).textContent = msg;
+    }
+
+    /** 编辑弹窗表单校验 */
+    function validateEditForm() {
+        let ok = true;
+        const plate = document.getElementById('editPlate').value.trim();
+        const owner = document.getElementById('editOwner').value.trim();
+        const phone = document.getElementById('editPhone').value.trim();
+        const amount = document.getElementById('editAmount').value.trim();
+        const startDate = document.getElementById('editStartDate').value;
+        const endDate = document.getElementById('editEndDate').value;
+
+        if (!plate) { showErr('editPlateTip', '车牌号不能为空'); ok = false; }
+        else if (!isValidPlate(plate)) { showErr('editPlateTip', '车牌号格式不正确（如：赣A88888）'); ok = false; }
+        else showErr('editPlateTip', '');
+
+        if (!owner) { showErr('editOwnerTip', '车主姓名不能为空'); ok = false; }
+        else showErr('editOwnerTip', '');
+
+        if (!phone) { showErr('editPhoneTip', '手机号不能为空'); ok = false; }
+        else if (!isValidPhone(phone)) { showErr('editPhoneTip', '手机号格式不正确'); ok = false; }
+        else showErr('editPhoneTip', '');
+
+        if (amount === '') { showErr('editAmountTip', '缴费金额不能为空'); ok = false; }
+        else if (Number(amount) <= 0) { showErr('editAmountTip', '缴费金额必须为正数'); ok = false; }
+        else showErr('editAmountTip', '');
+
+        if (!startDate) { showErr('editStartDateTip', '请选择开始日期'); ok = false; }
+        else showErr('editStartDateTip', '');
+
+        if (!endDate) { showErr('editEndDateTip', '请选择结束日期'); ok = false; }
+        else if (startDate && endDate < startDate) { showErr('editEndDateTip', '结束日期不能早于开始日期'); ok = false; }
+        else showErr('editEndDateTip', '');
+
+        return ok;
+    }
+
+    /** 保存编辑 / 续费结果 */
+    function saveEdit() {
+        if (!validateEditForm()) return;
+
+        const plate = document.getElementById('editPlate').value.trim();
+        const owner = document.getElementById('editOwner').value.trim();
+        const phone = document.getElementById('editPhone').value.trim();
+        const vehicleType = document.getElementById('editVehicleType').value;
+        const amount = Number(document.getElementById('editAmount').value);
+        const startDate = document.getElementById('editStartDate').value;
+        const endDate = document.getElementById('editEndDate').value;
+
+        // 组装更新后的月卡对象，重新计算剩余天数与状态
+        const updated = {
+            id: editingId,
+            plate: plate,
+            owner: owner,
+            phone: phone,
+            vehicleType: vehicleType,
+            amount: amount,
+            startDate: startDate,
+            endDate: endDate,
+            remainDay: calcDays(startDate, endDate),
+            status: calcStatus(endDate)
+        };
+
+        const idx = monthCards.findIndex(function (c) { return c.id === editingId; });
+        if (idx > -1) monthCards[idx] = updated;
+
+        saveMonthCards(monthCards);
+        closeEdit();
+        applyFilter();
+    }
+
+    /* ---------------- 事件绑定 ---------------- */
+
+    // 全选 / 取消全选
+    document.getElementById('selectAll').addEventListener('change', function () {
+        const checked = this.checked;
+        document.querySelectorAll('.row-check').forEach(function (cb) { cb.checked = checked; });
+    });
+
+    // 分页：上一页 / 下一页 / 切换每页条数
+    document.getElementById('prevBtn').addEventListener('click', function () {
+        if (currentPage > 1) { currentPage--; renderTable(); renderPagination(); }
+    });
+    document.getElementById('nextBtn').addEventListener('click', function () {
+        const totalPages = Math.ceil(filteredList.length / pageSize);
+        if (currentPage < totalPages) { currentPage++; renderTable(); renderPagination(); }
+    });
+    document.getElementById('pageSizeSelect').addEventListener('change', function () {
+        pageSize = Number(this.value);
+        currentPage = 1;
+        renderTable();
+        renderPagination();
+    });
+
+    // 编辑弹窗内日期变化时重算剩余天数与状态
+    document.getElementById('editStartDate').addEventListener('change', updateEditDerived);
+    document.getElementById('editEndDate').addEventListener('change', updateEditDerived);
+
+    // 点击遮罩空白处关闭弹窗
+    document.getElementById('viewModal').addEventListener('click', function (e) {
+        if (e.target === this) closeView();
+    });
+    document.getElementById('editModal').addEventListener('click', function (e) {
+        if (e.target === this) closeEdit();
+    });
+
+    /* ---------------- 页面初始化 ---------------- */
+    window.addEventListener('load', function () {
+        monthCards = initMonthCards();
+        filteredList = monthCards.slice();
+        initSidebar();
+        refresh();
+    });
+</script>
+</body>
+</html>
